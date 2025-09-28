@@ -1,0 +1,22 @@
+{
+  "name": "unified-cashback-search",
+  "version": "1.0.0",
+  "description": "Unified search for coupons and cashback offers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "scrape": "node scrapers/run-scrapers.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "fuse.js": "^7.0.0",
+    "node-cron": "^3.0.3",
+    "playwright": "^1.55.0",
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

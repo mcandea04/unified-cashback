@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Cashback Search</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Unified Cashback Search</h1>
+            <p>Găsește oferte de cashback și cupoane pentru magazinele tale preferate</p>
+        </header>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Caută un magazin (ex: eMAG, H&M, Zara)..." autocomplete="off">
+                <button id="searchButton">Caută</button>
+            </div>
+
+            <div class="sources-info" id="sourcesInfo">
+                <span>Căutând în...</span>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <span>Se caută oferte...</span>
+            </div>
+
+            <div id="results" class="results"></div>
+
+            <div id="noResults" class="no-results" style="display: none;">
+                <p>Nu am găsit oferte pentru această căutare. 📭</p>
+                <small>Încearcă cu un alt nume de magazin sau verifică ortografia.</small>
+            </div>
+        </div>
+
+        <footer>
+            <p>Surse: Mastercard Premium Collection, CashClub, TopCashback (în curând)</p>
+            <small>Ultima actualizare a datelor: <span id="lastUpdate">-</span></small>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
