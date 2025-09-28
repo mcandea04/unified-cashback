@@ -1,12 +1,12 @@
 # Unified Cashback Search
 
-A web application that searches for coupons and cashback offers across multiple Romanian services including Mastercard Premium Collection, CashClub, and more.
+A web application that searches for coupons and cashback offers across multiple Romanian services including Mastercard Premium Collection and CashClub.
 
 ## Features
 
 - 🔍 **Unified Search**: Search across multiple cashback and coupon platforms
-- 🏪 **Multiple Sources**: Integrates with Mastercard Premium Collection, CashClub, and TopCashback (coming soon)
-- 🚀 **Real-time Results**: Fast search with fuzzy matching
+- 🏪 **Multiple Sources**: Integrates with Mastercard Premium Collection and CashClub
+- 🚀 **Real-time Results**: Fast search results
 - 📱 **Responsive Design**: Works on desktop and mobile
 - 🤖 **Automated Scraping**: Daily automated data collection from partner sites
 
@@ -17,17 +17,12 @@ A web application that searches for coupons and cashback offers across multiple 
    npm install
    ```
 
-2. **Install Playwright browsers** (for web scraping):
-   ```bash
-   npx playwright install
-   ```
-
-3. **Run the application**:
+2. **Run the application**:
    ```bash
    npm start
    ```
 
-4. **Access the app**: Open http://localhost:8888 in your browser
+3. **Access the app**: Open http://localhost:8888 in your browser
 
 ## Usage
 
@@ -70,30 +65,12 @@ Simply enter a merchant name in the search box (e.g., "eMAG", "H&M", "Zara") to 
 
 ## Supported Sources
 
-### ✅ Implemented
 - **Mastercard Premium Collection** - Web scraping from priceless.com
 - **CashClub** - Web scraping from cashclub.ro
-
-### 🔄 Coming Soon
-- **TopCashback** - Via Fidel API integration
-- **UniCredit Shop Smart** - Advanced scraping techniques
-- **Raiffeisen Smart Market** - Mobile app integration
-- **Banca Transilvania Offers** - Banking portal integration
 
 ## Development
 
 ### Adding New Scrapers
-1. Create a new scraper class in `scrapers/`
-2. Implement the `scrape()` method
-3. Add to `run-scrapers.js`
-
-### Database Schema
-- **merchants**: Store merchant information (name, source, URL)
-- **offers**: Store offer details (description, cashback rate, type)
-
-## Notes
-
-- Data is refreshed daily via automated scraping
-- Search uses fuzzy matching for better results
-- All scrapers handle errors gracefully and continue operation
-- The application uses SQLite for simplicity and portability
+1. Create a new scraper file in `scrapers/`.
+2. Implement the scraping logic.
+3. Add the new scraper to `scrapers/run-scrapers.js`.
