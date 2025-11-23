@@ -1,5 +1,6 @@
 const MastercardScraper = require("./mastercard-scraper");
 const CashclubScraper = require("./cashclub-scraper");
+const GuerrillaScraper = require("./guerrilla-scraper");
 const Database = require("../database/db");
 
 async function runScrapers() {
@@ -18,6 +19,11 @@ async function runScrapers() {
       key: "mastercard",
     },
     { name: "CashClub", scraper: new CashclubScraper(), key: "cashclub" },
+    {
+      name: "Guerrilla Radio Avanpost",
+      scraper: new GuerrillaScraper(),
+      key: "guerrilla",
+    },
   ];
 
   const targetScraper = process.argv[2];

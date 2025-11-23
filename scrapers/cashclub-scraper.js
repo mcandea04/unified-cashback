@@ -8,33 +8,6 @@ class CashClubScraper {
     this.db = new Database();
   }
 
-  async getBuildId() {
-    return new Promise((resolve, reject) => {
-      https
-        .get(this.url, (res) => {
-          let data = "";
-          res.on("data", (chunk) => {
-            data += chunk;
-          });
-          res.on("end", () => {
-            try {
-              const match = data.match(/"buildId":"([^"]+)"/);
-              if (match && match[1]) {
-                resolve(match[1]);
-              } else {
-                reject("Could not find buildId");
-              }
-            } catch (e) {
-              reject(e);
-            }
-          });
-        })
-        .on("error", (err) => {
-          reject(err);
-        });
-    });
-  }
-
   async fetchJson(url) {
     return new Promise((resolve, reject) => {
       https
@@ -61,22 +34,22 @@ class CashClubScraper {
     console.log("Starting CashClub scraper...");
 
     try {
-      const buildId = await this.getBuildId();
-      console.log(`Found CashClub buildId: ${buildId}`);
-
       let allOffers = [];
       let pageNumber = 1;
-      let maxPages = 1; // Will be updated from the first API response
+      let maxPages = 1;
 
       while (pageNumber <= maxPages) {
         console.log(`Scraping CashClub API page ${pageNumber}...`);
-        const apiUrl = `https://cashclub.ro/_next/data/${buildId}/ro/shops.json?page=${pageNumber}`;
+        const apiUrl = `https://api.cashclub.ro/api/shops?pageNumber=${pageNumber}`;
 
         try {
           const json = await this.fetchJson(apiUrl);
-          const shopsData = json?.pageProps?.shops;
 
-          if (!shopsData || !shopsData.data || shopsData.data.length === 0) {
+          // The new API returns data directly in the root object
+          // Structure: { data: [...], lastPage: 86, ... }
+          const shopsData = json.data;
+
+          if (!shopsData || shopsData.length === 0) {
             console.log(
               `No more offers found on page ${pageNumber}. Stopping.`,
             );
@@ -84,18 +57,19 @@ class CashClubScraper {
           }
 
           if (pageNumber === 1) {
-            maxPages = shopsData.last_page || 105; // Fallback to 105 if not found
+            maxPages = json.lastPage || 100;
             console.log(`Total pages set to: ${maxPages}`);
           }
 
-          const offers = shopsData.data.map((shop) => {
+          const offers = shopsData.map((shop) => {
             const name = shop.name;
             const cashback = shop.cashbackValue || "Disponibil";
             let description = `Cashback disponibil pentru ${name}`;
             if (cashback !== "Disponibil") {
               description = `${name} oferă ${cashback} cashback prin CashClub`;
             }
-            const url = `https://cashclub.ro/shops/${shop.trimmedDomain}`;
+            // Updated URL format based on user feedback and API data
+            const url = `https://cashclub.ro/magazine/${shop.trimmedDomain}/${shop.detailsId}`;
 
             return {
               name,
