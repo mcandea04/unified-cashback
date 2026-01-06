@@ -8,12 +8,15 @@ class CashbackSearch {
     this.sourcesInfo = document.getElementById("sourcesInfo");
     this.lastUpdate = document.getElementById("lastUpdate");
 
+    this.offers = [];
+    this.fuse = null;
+
     this.init();
   }
 
-  init() {
-    // Load sources info
-    this.loadSources();
+  async init() {
+    // Load offers data
+    await this.loadOffers();
 
     // Event listeners
     this.searchButton.addEventListener("click", () => this.search());
@@ -25,37 +28,58 @@ class CashbackSearch {
 
     // Focus on input
     this.searchInput.focus();
-
-    // Set last update time
-    this.lastUpdate.textContent = new Date().toLocaleDateString("ro-RO");
   }
 
-  async loadSources() {
+  async loadOffers() {
     try {
-      const response = await fetch(`/api/sources?t=${new Date().getTime()}`);
+      const response = await fetch(`data/offers.json?t=${new Date().getTime()}`);
       const data = await response.json();
 
-      if (data.success && data.sources.length > 0) {
-        const sourceNames = {
-          mastercard: "Mastercard Premium",
-          cashclub: "CashClub",
-          topcashback: "TopCashback",
-        };
+      this.offers = data.offers || [];
 
-        const sourcesText = data.sources
-          .map(
-            (s) => `${sourceNames[s.source] || s.source} (${s.merchant_count})`,
-          )
-          .join(", ");
+      // Initialize Fuse.js for fuzzy search
+      this.fuse = new Fuse(this.offers, {
+        keys: ["name"],           // Only search merchant names
+        threshold: 0.2,           // Stricter matching (80% similarity required)
+        minMatchCharLength: 2,    // Require at least 2 chars to match
+        includeScore: true,
+      });
+      
+      // Update sources info
+      this.updateSourcesInfo(data);
 
-        this.sourcesInfo.innerHTML = `Căutând în: ${sourcesText}`;
+      // Update last update time
+      if (data.lastUpdated) {
+        this.lastUpdate.textContent = new Date(data.lastUpdated).toLocaleDateString("ro-RO");
       }
     } catch (error) {
-      console.error("Error loading sources:", error);
+      console.error("Error loading offers:", error);
+      this.sourcesInfo.innerHTML = "Eroare la încărcarea datelor";
     }
   }
 
-  async search() {
+  updateSourcesInfo(data) {
+    const sourceNames = {
+      mastercard: "Mastercard Premium",
+      cashclub: "CashClub",
+      guerrilla: "Guerrilla Radio",
+    };
+
+    // Count offers by source
+    const sourceCounts = {};
+    for (const offer of this.offers) {
+      const source = offer.source;
+      sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+    }
+
+    const sourcesText = Object.entries(sourceCounts)
+      .map(([source, count]) => `${sourceNames[source] || source} (${count})`)
+      .join(", ");
+
+    this.sourcesInfo.innerHTML = `Căutând în: ${sourcesText}`;
+  }
+
+  search() {
     const query = this.searchInput.value.trim();
 
     if (query.length < 2) {
@@ -65,21 +89,16 @@ class CashbackSearch {
 
     this.showLoading();
 
-    try {
-      const response = await fetch(
-        `/api/search?q=${encodeURIComponent(query)}&t=${new Date().getTime()}`,
-      );
-      const data = await response.json();
+    // Use Fuse.js for fuzzy search
+    const results = this.fuse.search(query);
 
-      if (data.success) {
-        this.displayResults(data.results, query);
-      } else {
-        throw new Error(data.message || "Search failed");
-      }
-    } catch (error) {
-      console.error("Search error:", error);
-      this.showError("A apărut o eroare la căutare. Te rog încearcă din nou.");
-    }
+    // Transform results to match expected format
+    const formattedResults = results.map((r) => r.item);
+
+    // Small delay to show loading indicator
+    setTimeout(() => {
+      this.displayResults(formattedResults, query);
+    }, 100);
   }
 
   showLoading() {
@@ -111,7 +130,7 @@ class CashbackSearch {
       {
         mastercard: "Mastercard Premium",
         cashclub: "CashClub",
-        topcashback: "TopCashback",
+        guerrilla: "Guerrilla Radio",
       }[result.source] || result.source;
 
     const offersHtml = result.offers
@@ -167,3 +186,4 @@ class CashbackSearch {
 document.addEventListener("DOMContentLoaded", () => {
   new CashbackSearch();
 });
+

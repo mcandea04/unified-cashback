@@ -1,14 +1,13 @@
+const fs = require("fs");
+const path = require("path");
 const MastercardScraper = require("./mastercard-scraper");
 const CashclubScraper = require("./cashclub-scraper");
 const GuerrillaScraper = require("./guerrilla-scraper");
-const Database = require("../database/db");
+
+const OUTPUT_PATH = path.join(__dirname, "..", "docs", "data", "offers.json");
 
 async function runScrapers() {
   console.log("Starting scraper run...");
-
-  // Initialize database first
-  const db = new Database();
-  await db.init();
 
   const startTime = Date.now();
 
@@ -41,18 +40,51 @@ async function runScrapers() {
   }
 
   const results = {};
+  let allOffers = [];
 
-  for (const { name, scraper } of scrapersToRun) {
+  // If running a single scraper, load existing data first
+  if (targetScraper) {
+    try {
+      const existingData = JSON.parse(fs.readFileSync(OUTPUT_PATH, "utf8"));
+      // Keep offers from other sources
+      allOffers = existingData.offers.filter(
+        (o) => o.source !== targetScraper,
+      );
+      console.log(
+        `Loaded ${allOffers.length} existing offers from other sources`,
+      );
+    } catch (e) {
+      console.log("No existing data found, starting fresh");
+    }
+  }
+
+  for (const { name, scraper, key } of scrapersToRun) {
     try {
       console.log(`\n--- Running ${name} scraper ---`);
-      const count = await scraper.scrape();
-      results[name] = { success: true, count };
-      console.log(`✓ ${name}: ${count} offers scraped`);
+      const offers = await scraper.scrape();
+      results[name] = { success: true, count: offers.length };
+      allOffers = allOffers.concat(offers);
+      console.log(`✓ ${name}: ${offers.length} offers scraped`);
     } catch (error) {
       console.error(`✗ ${name} failed:`, error.message);
       results[name] = { success: false, error: error.message };
     }
   }
+
+  // Write to JSON file
+  const outputData = {
+    lastUpdated: new Date().toISOString(),
+    offers: allOffers,
+  };
+
+  // Ensure directory exists
+  const outputDir = path.dirname(OUTPUT_PATH);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(outputData, null, 2));
+  console.log(`\nWrote ${allOffers.length} offers to ${OUTPUT_PATH}`);
 
   const endTime = Date.now();
   const duration = ((endTime - startTime) / 1000).toFixed(2);
