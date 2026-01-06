@@ -1,11 +1,9 @@
 const { chromium } = require("playwright");
-const Database = require("../database/db");
 
 class MastercardScraper {
   constructor() {
     this.source = "mastercard";
     this.url = "https://www.priceless.com/filter/options";
-    this.db = new Database();
   }
 
   extractMerchantNameFromUrl(url) {
@@ -63,41 +61,34 @@ class MastercardScraper {
 
       console.log(`Found ${offers.length} offers from Mastercard`);
 
-      // Clear existing data for this source
-      await this.db.clearSourceData(this.source);
-
-      // Insert new data
-      let savedCount = 0;
+      // Transform to unified format
+      const results = [];
       for (const offer of offers) {
         try {
           const merchantName =
             this.extractMerchantNameFromUrl(offer.productUrl) ||
             offer.pDisplayName;
 
-          const merchantId = await this.db.insertMerchant(
-            merchantName,
-            this.source,
-            `https://www.priceless.com${offer.productUrl}`
-          );
-
-          await this.db.insertOffer(
-            merchantId,
-            offer.pDisplayName,
-            offer.displayPrice,
-            "premium_collection",
-            this.source
-          );
-
-          savedCount++;
+          results.push({
+            name: merchantName,
+            source: this.source,
+            url: `https://www.priceless.com${offer.productUrl}`,
+            offers: [
+              {
+                description: offer.pDisplayName,
+                cashback: offer.displayPrice,
+              },
+            ],
+          });
         } catch (error) {
-          console.error(`Error saving offer for ${offer.pDisplayName}:`, error);
+          console.error(`Error processing offer ${offer.pDisplayName}:`, error);
         }
       }
 
       console.log(
-        `Saved ${savedCount} offers from Mastercard Premium Collection`
+        `Processed ${results.length} offers from Mastercard Premium Collection`,
       );
-      return savedCount;
+      return results;
     } catch (error) {
       console.error("Error scraping Mastercard:", error);
       throw error;

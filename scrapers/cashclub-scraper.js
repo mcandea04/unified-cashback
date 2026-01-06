@@ -1,11 +1,9 @@
 const https = require("https");
-const Database = require("../database/db");
 
 class CashClubScraper {
   constructor() {
     this.source = "cashclub";
     this.url = "https://cashclub.ro/magazine";
-    this.db = new Database();
   }
 
   async fetchJson(url) {
@@ -73,9 +71,14 @@ class CashClubScraper {
 
             return {
               name,
-              description,
-              cashback,
+              source: this.source,
               url,
+              offers: [
+                {
+                  description,
+                  cashback,
+                },
+              ],
             };
           });
 
@@ -93,7 +96,7 @@ class CashClubScraper {
         }
       }
 
-      // Remove duplicates - though with API this is less likely
+      // Remove duplicates
       const uniqueOffers = [];
       const seenNames = new Set();
 
@@ -109,35 +112,7 @@ class CashClubScraper {
         `Found ${uniqueOffers.length} unique offers from CashClub across ${pageNumber - 1} pages.`,
       );
 
-      // Clear existing data for this source
-      await this.db.clearSourceData(this.source);
-
-      // Insert new data
-      let savedCount = 0;
-      for (const offer of uniqueOffers) {
-        try {
-          const merchantId = await this.db.insertMerchant(
-            offer.name,
-            this.source,
-            offer.url,
-          );
-
-          await this.db.insertOffer(
-            merchantId,
-            offer.description,
-            offer.cashback,
-            "cashback",
-            this.source,
-          );
-
-          savedCount++;
-        } catch (error) {
-          console.error(`Error saving offer for ${offer.name}:`, error.message);
-        }
-      }
-
-      console.log(`Saved ${savedCount} offers from CashClub`);
-      return savedCount;
+      return uniqueOffers;
     } catch (error) {
       console.error("Error scraping CashClub:", error);
       throw error;

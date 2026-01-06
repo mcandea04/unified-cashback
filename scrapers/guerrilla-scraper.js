@@ -1,11 +1,9 @@
 const { chromium } = require("playwright");
-const Database = require("../database/db");
 
 class GuerrillaScraper {
   constructor() {
     this.source = "guerrilla";
     this.url = "https://www.guerrillaradio.ro/avanpost/";
-    this.db = new Database();
   }
 
   async scrape() {
@@ -46,38 +44,26 @@ class GuerrillaScraper {
 
       console.log(`Found ${merchants.length} merchants from Guerrilla Radio`);
 
-      // Clear existing data
-      await this.db.clearSourceData(this.source);
-
-      // Insert new data
-      let savedCount = 0;
+      // Transform to unified format
+      const results = [];
       for (const merchant of merchants) {
-        try {
-          if (!merchant.name) continue;
+        if (!merchant.name) continue;
 
-          const merchantId = await this.db.insertMerchant(
-            merchant.name,
-            this.source,
-            merchant.url
-          );
-
-          // Since there are no specific offers listed on the main page, we add a generic one
-          await this.db.insertOffer(
-            merchantId,
-            "Avanpost Radio Guerrilla",
-            "Check details",
-            "avanpost",
-            this.source
-          );
-
-          savedCount++;
-        } catch (error) {
-          console.error(`Error saving merchant ${merchant.name}:`, error);
-        }
+        results.push({
+          name: merchant.name,
+          source: this.source,
+          url: merchant.url,
+          offers: [
+            {
+              description: "Avanpost Radio Guerrilla",
+              cashback: "Check details",
+            },
+          ],
+        });
       }
 
-      console.log(`Saved ${savedCount} merchants from Guerrilla Radio`);
-      return savedCount;
+      console.log(`Processed ${results.length} merchants from Guerrilla Radio`);
+      return results;
     } catch (error) {
       console.error("Error scraping Guerrilla Radio:", error);
       throw error;
