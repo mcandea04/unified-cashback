@@ -192,6 +192,7 @@ class CashbackSearch {
       mastercard: "Mastercard Premium",
       cashclub: "CashClub",
       guerrilla: "Guerrilla Radio",
+      smartmarket: "Smart Market",
     };
 
     const sourceCounts = {};
@@ -257,6 +258,7 @@ class CashbackSearch {
         mastercard: "Mastercard Premium",
         cashclub: "CashClub",
         guerrilla: "Guerrilla Radio",
+        smartmarket: "Smart Market",
       }[result.source] || result.source;
 
     const offersHtml = result.offers

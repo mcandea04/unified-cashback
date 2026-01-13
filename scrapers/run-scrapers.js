@@ -3,6 +3,7 @@ const path = require("path");
 const MastercardScraper = require("./mastercard-scraper");
 const CashclubScraper = require("./cashclub-scraper");
 const GuerrillaScraper = require("./guerrilla-scraper");
+const SmartMarketScraper = require("./smartmarket-scraper");
 
 const OUTPUT_PATH = path.join(__dirname, "..", "docs", "data", "offers.json");
 
@@ -22,6 +23,11 @@ async function runScrapers() {
       name: "Guerrilla Radio Avanpost",
       scraper: new GuerrillaScraper(),
       key: "guerrilla",
+    },
+    {
+      name: "Smart Market Raiffeisen",
+      scraper: new SmartMarketScraper(),
+      key: "smartmarket",
     },
   ];
 

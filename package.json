@@ -7,6 +7,7 @@
     "scrape:mastercard": "node scrapers/run-scrapers.js mastercard",
     "scrape:cashclub": "node scrapers/run-scrapers.js cashclub",
     "scrape:guerrilla": "node scrapers/run-scrapers.js guerrilla",
+    "scrape:smartmarket": "node scrapers/run-scrapers.js smartmarket",
     "serve": "npx serve docs -l 8888"
   },
   "dependencies": {

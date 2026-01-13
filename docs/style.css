@@ -181,6 +181,11 @@ header p {
     color: white;
 }
 
+.source-smartmarket {
+    background: #FFCC00;
+    color: #333;
+}
+
 .offers-list {
     margin-top: 15px;
 }

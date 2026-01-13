@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-06T11:45:53.066Z",
+  "lastUpdated": "2026-01-13T07:48:37.409Z",
   "offers": [
     {
       "name": "Mastercard Tuesday Romania",
@@ -20117,6 +20117,204 @@
         {
           "description": "Avanpost Radio Guerrilla",
           "cashback": "Check details"
+        }
+      ]
+    },
+    {
+      "name": "AVON",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "10% la AVON",
+          "cashback": "10%"
+        }
+      ]
+    },
+    {
+      "name": "Raiffeisen Bank",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "40 la Raiffeisen Bank",
+          "cashback": "40"
+        }
+      ]
+    },
+    {
+      "name": "Noriel",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "7% la Noriel",
+          "cashback": "7%"
+        }
+      ]
+    },
+    {
+      "name": "GUNNAR",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "15% la GUNNAR",
+          "cashback": "15%"
+        }
+      ]
+    },
+    {
+      "name": "eMAG",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "10% la eMAG",
+          "cashback": "10%"
+        }
+      ]
+    },
+    {
+      "name": "Adinish",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "20 la Adinish",
+          "cashback": "20"
+        }
+      ]
+    },
+    {
+      "name": "Zandra",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "15 Lei la Zandra",
+          "cashback": "15 Lei"
+        }
+      ]
+    },
+    {
+      "name": "bebe organic",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "7% la bebe organic",
+          "cashback": "7%"
+        }
+      ]
+    },
+    {
+      "name": "Ra- or R",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "250 la Ra- or R",
+          "cashback": "250"
+        }
+      ]
+    },
+    {
+      "name": "SanoVita",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "12% la SanoVita",
+          "cashback": "12%"
+        }
+      ]
+    },
+    {
+      "name": "bebe",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "7% la bebe",
+          "cashback": "7%"
+        }
+      ]
+    },
+    {
+      "name": "iBarber.ro",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "15% la iBarber.ro",
+          "cashback": "15%"
+        }
+      ]
+    },
+    {
+      "name": "vegis.ro",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "12% la vegis.ro",
+          "cashback": "12%"
+        }
+      ]
+    },
+    {
+      "name": "Vegis",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "12% reduc la Vegis",
+          "cashback": "12% reduc"
+        }
+      ]
+    },
+    {
+      "name": "Smart Market",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "250 la Smart Market",
+          "cashback": "250"
+        }
+      ]
+    },
+    {
+      "name": "Bagno",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "5% la Bagno",
+          "cashback": "5%"
+        }
+      ]
+    },
+    {
+      "name": "Rozmarin",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "10% la Rozmarin",
+          "cashback": "10%"
+        }
+      ]
+    },
+    {
+      "name": "INPUFF",
+      "source": "smartmarket",
+      "url": "https://www.raiffeisen.ro/smart-market",
+      "offers": [
+        {
+          "description": "15 Lei la INPUFF",
+          "cashback": "15 Lei"
         }
       ]
     }
