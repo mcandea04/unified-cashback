@@ -10,42 +10,48 @@
 <body>
     <div class="container">
         <header>
-            <h1>🔍 Unified Cashback Search</h1>
-            <p>Găsește oferte de cashback și cupoane pentru magazinele tale preferate</p>
+            <h1>🔍 <span id="appTitle" data-i18n="appTitle">Unified Cashback Search</span></h1>
+            <p id="tagline" data-i18n="tagline">Find cashback and coupon offers for your favorite stores</p>
+            <div class="language-selector">
+                <label for="languageSelect" data-i18n="languageLabel">Language</label>
+                <select id="languageSelect">
+                    <option value="en">English</option>
+                    <option value="ro">Română</option>
+                </select>
+            </div>
         </header>
 
         <div class="search-section">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Caută un magazin (ex: eMAG, H&M, Zara)..." autocomplete="off">
-                <button id="searchButton">Caută</button>
+                <input type="text" id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="Search for a store (e.g., eMAG, H&M, Zara)..." autocomplete="off">
+                <button id="searchButton" data-i18n="searchButton">Search</button>
             </div>
 
             <div class="sources-info" id="sourcesInfo">
-                <span>Se încarcă sursele...</span>
+                <span data-i18n="sourcesLoading">Loading sources...</span>
             </div>
         </div>
 
         <div class="results-section">
             <div id="loading" class="loading" style="display: none;">
                 <div class="spinner"></div>
-                <span>Se caută oferte...</span>
+                <span data-i18n="loading">Searching for offers...</span>
             </div>
 
             <div id="results" class="results"></div>
 
             <div id="noResults" class="no-results" style="display: none;">
-                <p>Nu am găsit oferte pentru această căutare. 📭</p>
-                <small>Încearcă cu un alt nume de magazin sau verifică ortografia.</small>
+                <p data-i18n="noResultsTitle">No offers found for this search. 📭</p>
+                <small data-i18n="noResultsHint">Try another store name or check the spelling.</small>
             </div>
         </div>
 
         <footer>
-            <p>Surse: Mastercard Premium Collection, CashClub, Guerrilla Radio Avanpost</p>
-            <small>Ultima actualizare a datelor: <span id="lastUpdate">-</span></small>
+            <p data-i18n="footerSources">Sources: Mastercard Premium Collection, CashClub, Guerrilla Radio Avanpost</p>
+            <small><span data-i18n="lastUpdatedLabel">Data last updated:</span> <span id="lastUpdate">-</span></small>
         </footer>
     </div>
 
     <script src="script.js"></script>
 </body>
 </html>
-

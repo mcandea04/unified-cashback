@@ -1,3 +1,44 @@
+const translations = {
+  en: {
+    appTitle: "Unified Cashback Search",
+    tagline: "Find cashback and coupon offers for your favorite stores",
+    languageLabel: "Language",
+    searchPlaceholder: "Search for a store (e.g., eMAG, H&M, Zara)...",
+    searchButton: "Search",
+    sourcesLoading: "Loading sources...",
+    searchingIn: "Searching in: {sources}",
+    loading: "Searching for offers...",
+    noResultsTitle: "No offers found for this search. 📭",
+    noResultsHint: "Try another store name or check the spelling.",
+    footerSources: "Sources: Mastercard Premium Collection, CashClub, Guerrilla Radio Avanpost",
+    lastUpdatedLabel: "Data last updated:",
+    viewDetails: "View details",
+    minCharsAlert: "Please enter at least 2 characters to search.",
+    errorLoading: "Failed to load data.",
+    errorLoadingShort: "Error loading data.",
+    errorHint: "Check your internet connection and try again.",
+  },
+  ro: {
+    appTitle: "Căutare Cashback Unificată",
+    tagline: "Găsește oferte de cashback și cupoane pentru magazinele tale preferate",
+    languageLabel: "Limbă",
+    searchPlaceholder: "Caută un magazin (ex: eMAG, H&M, Zara)...",
+    searchButton: "Caută",
+    sourcesLoading: "Se încarcă sursele...",
+    searchingIn: "Căutând în: {sources}",
+    loading: "Se caută oferte...",
+    noResultsTitle: "Nu am găsit oferte pentru această căutare. 📭",
+    noResultsHint: "Încearcă cu un alt nume de magazin sau verifică ortografia.",
+    footerSources: "Surse: Mastercard Premium Collection, CashClub, Guerrilla Radio Avanpost",
+    lastUpdatedLabel: "Ultima actualizare a datelor:",
+    viewDetails: "Vezi detalii",
+    minCharsAlert: "Te rog introdu cel puțin 2 caractere pentru căutare.",
+    errorLoading: "Eroare la încărcarea datelor.",
+    errorLoadingShort: "Eroare la încărcarea datelor.",
+    errorHint: "Verifică conexiunea la internet și încearcă din nou.",
+  },
+};
+
 class CashbackSearch {
   constructor() {
     this.searchInput = document.getElementById("searchInput");
@@ -7,26 +48,97 @@ class CashbackSearch {
     this.noResults = document.getElementById("noResults");
     this.sourcesInfo = document.getElementById("sourcesInfo");
     this.lastUpdate = document.getElementById("lastUpdate");
+    this.languageSelect = document.getElementById("languageSelect");
 
     this.offers = [];
     this.fuse = null;
+    this.currentResults = [];
+    this.lastQuery = "";
+    this.lastUpdatedDate = null;
+    this.isDataLoaded = false;
+    this.currentLanguage = this.getStoredLanguage();
 
     this.init();
   }
 
+  getStoredLanguage() {
+    const storedLanguage = localStorage.getItem("language");
+    if (storedLanguage && translations[storedLanguage]) {
+      return storedLanguage;
+    }
+    return "en";
+  }
+
+  setLanguage(language, persist = true) {
+    const resolvedLanguage = translations[language] ? language : "en";
+    this.currentLanguage = resolvedLanguage;
+    document.documentElement.lang = resolvedLanguage;
+
+    if (persist) {
+      localStorage.setItem("language", resolvedLanguage);
+    }
+
+    if (this.languageSelect) {
+      this.languageSelect.value = resolvedLanguage;
+    }
+
+    this.applyTranslations();
+
+    if (this.isDataLoaded) {
+      this.updateSourcesInfo();
+      this.updateLastUpdated();
+    } else {
+      this.sourcesInfo.textContent = this.t("sourcesLoading");
+    }
+
+    if (this.results.style.display === "grid") {
+      this.displayResults(this.currentResults, this.lastQuery);
+    }
+  }
+
+  t(key, replacements = {}) {
+    const languageStrings = translations[this.currentLanguage] || translations.en;
+    let value = languageStrings[key] || translations.en[key] || key;
+
+    for (const [token, replacement] of Object.entries(replacements)) {
+      value = value.replace(`{${token}}`, replacement);
+    }
+
+    return value;
+  }
+
+  applyTranslations() {
+    const textNodes = document.querySelectorAll("[data-i18n]");
+    textNodes.forEach((node) => {
+      const key = node.getAttribute("data-i18n");
+      node.textContent = this.t(key);
+    });
+
+    const placeholderNodes = document.querySelectorAll("[data-i18n-placeholder]");
+    placeholderNodes.forEach((node) => {
+      const key = node.getAttribute("data-i18n-placeholder");
+      node.setAttribute("placeholder", this.t(key));
+    });
+  }
+
   async init() {
-    // Load offers data
+    this.setLanguage(this.currentLanguage, false);
+
+    if (this.languageSelect) {
+      this.languageSelect.addEventListener("change", (event) => {
+        this.setLanguage(event.target.value);
+      });
+    }
+
     await this.loadOffers();
 
-    // Event listeners
     this.searchButton.addEventListener("click", () => this.search());
-    this.searchInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
+    this.searchInput.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
         this.search();
       }
     });
 
-    // Focus on input
     this.searchInput.focus();
   }
 
@@ -36,36 +148,44 @@ class CashbackSearch {
       const data = await response.json();
 
       this.offers = data.offers || [];
+      this.isDataLoaded = true;
 
-      // Initialize Fuse.js for fuzzy search
       this.fuse = new Fuse(this.offers, {
-        keys: ["name"],           // Only search merchant names
-        threshold: 0.2,           // Stricter matching (80% similarity required)
-        minMatchCharLength: 2,    // Require at least 2 chars to match
+        keys: ["name"],
+        threshold: 0.2,
+        minMatchCharLength: 2,
         includeScore: true,
       });
-      
-      // Update sources info
-      this.updateSourcesInfo(data);
 
-      // Update last update time
+      this.updateSourcesInfo();
+
       if (data.lastUpdated) {
-        this.lastUpdate.textContent = new Date(data.lastUpdated).toLocaleDateString("ro-RO");
+        this.lastUpdatedDate = new Date(data.lastUpdated);
+        this.updateLastUpdated();
       }
     } catch (error) {
       console.error("Error loading offers:", error);
-      this.sourcesInfo.innerHTML = "Eroare la încărcarea datelor";
+      this.sourcesInfo.textContent = this.t("errorLoadingShort");
+      this.showError(this.t("errorLoading"));
     }
   }
 
-  updateSourcesInfo(data) {
+  updateLastUpdated() {
+    if (!this.lastUpdatedDate) {
+      return;
+    }
+
+    const locale = this.currentLanguage === "ro" ? "ro-RO" : "en-US";
+    this.lastUpdate.textContent = this.lastUpdatedDate.toLocaleDateString(locale);
+  }
+
+  updateSourcesInfo() {
     const sourceNames = {
       mastercard: "Mastercard Premium",
       cashclub: "CashClub",
       guerrilla: "Guerrilla Radio",
     };
 
-    // Count offers by source
     const sourceCounts = {};
     for (const offer of this.offers) {
       const source = offer.source;
@@ -76,26 +196,22 @@ class CashbackSearch {
       .map(([source, count]) => `${sourceNames[source] || source} (${count})`)
       .join(", ");
 
-    this.sourcesInfo.innerHTML = `Căutând în: ${sourcesText}`;
+    this.sourcesInfo.textContent = this.t("searchingIn", { sources: sourcesText });
   }
 
   search() {
     const query = this.searchInput.value.trim();
 
     if (query.length < 2) {
-      alert("Te rog introdu cel puțin 2 caractere pentru căutare.");
+      alert(this.t("minCharsAlert"));
       return;
     }
 
     this.showLoading();
 
-    // Use Fuse.js for fuzzy search
     const results = this.fuse.search(query);
+    const formattedResults = results.map((result) => result.item);
 
-    // Transform results to match expected format
-    const formattedResults = results.map((r) => r.item);
-
-    // Small delay to show loading indicator
     setTimeout(() => {
       this.displayResults(formattedResults, query);
     }, 100);
@@ -108,6 +224,8 @@ class CashbackSearch {
   }
 
   displayResults(results, query) {
+    this.currentResults = results;
+    this.lastQuery = query;
     this.loading.style.display = "none";
 
     if (results.length === 0) {
@@ -148,7 +266,7 @@ class CashbackSearch {
       ? `
             <div class="merchant-url">
                 <a href="${result.url}" target="_blank" rel="noopener">
-                    🔗 Vezi detalii
+                    🔗 ${this.t("viewDetails")}
                 </a>
             </div>
         `
@@ -177,13 +295,11 @@ class CashbackSearch {
 
     this.noResults.innerHTML = `
             <p>❌ ${message}</p>
-            <small>Verifică conexiunea la internet și încearcă din nou.</small>
+            <small>${this.t("errorHint")}</small>
         `;
   }
 }
 
-// Initialize the application when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
   new CashbackSearch();
 });
-

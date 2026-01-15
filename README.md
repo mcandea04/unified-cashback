@@ -160,3 +160,11 @@ launchctl load ~/Library/LaunchAgents/com.cashback.scraper.plist
 ```
 
 3. Add the scraper to `scrapers/run-scrapers.js`
+
+### Updating UI Translations
+
+The UI text is localized in `docs/script.js` using a `translations` dictionary. To add or modify strings:
+
+1. Add or edit keys in the `translations.en` and `translations.ro` objects.
+2. Ensure every `data-i18n` or `data-i18n-placeholder` attribute in `docs/index.html` has a matching key.
+3. Keep keys consistent across languages so the fallback behavior works as expected.
