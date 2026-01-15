@@ -62,9 +62,13 @@ class CashbackSearch {
   }
 
   getStoredLanguage() {
-    const storedLanguage = localStorage.getItem("language");
-    if (storedLanguage && translations[storedLanguage]) {
-      return storedLanguage;
+    try {
+      const storedLanguage = localStorage.getItem("language");
+      if (storedLanguage && translations[storedLanguage]) {
+        return storedLanguage;
+      }
+    } catch (error) {
+      console.warn("Unable to access stored language preference.", error);
     }
     return "en";
   }
@@ -75,7 +79,11 @@ class CashbackSearch {
     document.documentElement.lang = resolvedLanguage;
 
     if (persist) {
-      localStorage.setItem("language", resolvedLanguage);
+      try {
+        localStorage.setItem("language", resolvedLanguage);
+      } catch (error) {
+        console.warn("Unable to persist language preference.", error);
+      }
     }
 
     if (this.languageSelect) {
