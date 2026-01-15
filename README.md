@@ -57,6 +57,10 @@ Open http://localhost:8888 in your browser.
 
 Your site will be live at `https://YOUR_USERNAME.github.io/YOUR_REPO/`
 
+### Pull Request Previews
+
+Pull requests opened from branches within this repository will publish a GitHub Pages preview deployment. The preview URL appears in the GitHub Actions job summary for the PR. Forked PRs are skipped because GitHub Pages deployments require write permissions to the repository.
+
 ## Usage
 
 ### Scraping Commands
