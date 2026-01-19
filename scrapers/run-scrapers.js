@@ -4,8 +4,11 @@ const MastercardScraper = require("./mastercard-scraper");
 const CashclubScraper = require("./cashclub-scraper");
 const GuerrillaScraper = require("./guerrilla-scraper");
 const SmartMarketScraper = require("./smartmarket-scraper");
+const { generateDeltaReport } = require("./utils/delta-reporter");
 
 const OUTPUT_PATH = path.join(__dirname, "..", "docs", "data", "offers.json");
+
+const EXPENSIVE_SCRAPERS = ["smartmarket"];
 
 async function runScrapers() {
   console.log("Starting scraper run...");
@@ -48,20 +51,20 @@ async function runScrapers() {
   const results = {};
   let allOffers = [];
 
-  // If running a single scraper, load existing data first
-  if (targetScraper) {
-    try {
-      const existingData = JSON.parse(fs.readFileSync(OUTPUT_PATH, "utf8"));
+  // Load existing data - needed for single scraper runs and delta reporting
+  let existingOffers = [];
+  try {
+    const existingData = JSON.parse(fs.readFileSync(OUTPUT_PATH, "utf8"));
+    existingOffers = existingData.offers || [];
+    if (targetScraper) {
       // Keep offers from other sources
-      allOffers = existingData.offers.filter(
-        (o) => o.source !== targetScraper,
-      );
+      allOffers = existingOffers.filter((o) => o.source !== targetScraper);
       console.log(
         `Loaded ${allOffers.length} existing offers from other sources`,
       );
-    } catch (e) {
-      console.log("No existing data found, starting fresh");
     }
+  } catch (e) {
+    console.log("No existing data found, starting fresh");
   }
 
   for (const { name, scraper, key } of scrapersToRun) {
@@ -71,6 +74,11 @@ async function runScrapers() {
       results[name] = { success: true, count: offers.length };
       allOffers = allOffers.concat(offers);
       console.log(`✓ ${name}: ${offers.length} offers scraped`);
+
+      // Generate delta report for expensive scrapers
+      if (EXPENSIVE_SCRAPERS.includes(key)) {
+        generateDeltaReport(existingOffers, offers, key);
+      }
     } catch (error) {
       console.error(`✗ ${name} failed:`, error.message);
       results[name] = { success: false, error: error.message };

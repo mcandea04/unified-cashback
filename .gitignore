@@ -1,2 +1,4 @@
 node_modules/
 database/cashback.db
+scrapers/smartmarket-input/
+scrapers/smartmarket-frames/
