@@ -1,11 +1,11 @@
 # Unified Cashback Search
 
-A static web application that searches for coupons and cashback offers across multiple Romanian services including Mastercard Premium Collection, CashClub, and Guerrilla Radio Avanpost.
+A static web application that searches for coupons and cashback offers across multiple Romanian services including Mastercard Premium Collection, CashClub, Avanpost Guerrilla, Raiffeisen Smart Market, ING Bazar, and UniCredit ShopSmart.
 
 ## Features
 
 - 🔍 **Unified Search**: Search across multiple cashback and coupon platforms
-- 🏪 **Multiple Sources**: Integrates with Mastercard Premium Collection, CashClub, and Guerrilla Radio
+- 🏪 **Multiple Sources**: Integrates with Mastercard, CashClub, Avanpost Guerrilla, Smart Market, ING Bazar, and UniCredit ShopSmart
 - ⚡ **Fast Client-Side Search**: Uses Fuse.js for instant fuzzy search
 - 📱 **Responsive Design**: Works on desktop and mobile
 - 🆓 **Free Hosting**: Designed for GitHub Pages (zero cost, no billing surprises)
@@ -73,6 +73,7 @@ npm run scrape
 npm run scrape:mastercard
 npm run scrape:cashclub
 npm run scrape:guerrilla
+npm run scrape:smartmarket
 ```
 
 ### Updating Data (every 3 days or as needed)
@@ -99,7 +100,13 @@ GitHub Pages will auto-deploy within seconds.
 │   ├── mastercard-scraper.js
 │   ├── cashclub-scraper.js
 │   ├── guerrilla-scraper.js
-│   └── run-scrapers.js     # Scraper orchestrator
+│   ├── smartmarket-scraper.js  # Vision OCR scraper (Ollama + sharp)
+│   ├── extract-frames.js       # Generic video frame extractor
+│   ├── <source>-input/         # Drop phone screen recordings here (gitignored)
+│   ├── <source>-frames/        # Extracted frames (gitignored, auto-generated)
+│   ├── utils/
+│   │   └── delta-reporter.js   # Delta reporting for tracking offer changes
+│   └── run-scrapers.js         # Scraper orchestrator
 ├── package.json
 └── README.md
 ```
@@ -110,7 +117,31 @@ GitHub Pages will auto-deploy within seconds.
 |--------|------|--------|
 | Mastercard Premium Collection | Premium offers | Playwright (browser) |
 | CashClub | Cashback | API |
-| Guerrilla Radio Avanpost | Discounts | Playwright (browser) |
+| Avanpost Guerrilla | Discounts | Playwright (browser) |
+| Smart Market (Raiffeisen) | Cashback / Points | Video frame extraction + Claude review |
+| ING Bazar | Cashback | Video frame extraction + Claude review |
+| UniCredit ShopSmart | Cashback | Video frame extraction + Claude review |
+
+### Video-Based Scrapers (Smart Market, ING Bazar, UniCredit)
+
+These three sources are mobile-only apps with no web version. The workflow is:
+
+1. Record a video on your phone while scrolling through the app's offers
+   - Smart Market: direct screen recording works
+   - ING Bazar / UniCredit: these apps block screen recording, so film the phone screen with a second device
+2. Drop the video in `scrapers/<source>-input/` (e.g., `scrapers/ing-input/`)
+3. Run the frame extractor:
+   ```bash
+   npm run extract:smartmarket
+   npm run extract:ing
+   npm run extract:unicredit
+   ```
+   This extracts frames using FFmpeg, auto-rotates if needed (ING videos are landscape), and deduplicates similar frames via perceptual hashing
+4. Open a Claude Code session and ask it to review the frames in `scrapers/<source>-frames/` and update `docs/data/offers.json`
+
+**Requirements:**
+- [FFmpeg](https://ffmpeg.org/) installed (`brew install ffmpeg`)
+- [sharp](https://sharp.pixelplumbing.com/) npm package (installed via `npm install`)
 
 ## Optional: Automated Scraping with launchd (macOS)
 

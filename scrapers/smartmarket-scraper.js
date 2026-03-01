@@ -1,27 +1,43 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const { execSync } = require("child_process");
 const sharp = require("sharp");
 
 class SmartMarketScraper {
   constructor() {
     this.source = "smartmarket";
     this.url = "https://www.raiffeisen.ro/smart-market";
+    this.inputDir = path.join(__dirname, "smartmarket-input");
     this.framesDir = path.join(__dirname, "smartmarket-frames");
     this.ollamaUrl = "http://localhost:11434/api/generate";
-    // Note: deepseek-ocr doesn't work with /api/generate endpoint (returns empty)
-    // Using only llama3.2-vision which produces reasonable results
     this.primaryModel = "llama3.2-vision";
     this.fallbackModel = null;
+    this.similarityThreshold = 10;
   }
 
   async scrape() {
     console.log("Starting Smart Market scraper...");
 
     try {
-      const frameFiles = this.getFrameFiles();
+      // Extract frames from video if no frames exist yet
+      let frameFiles = this.getFrameFiles();
       if (frameFiles.length === 0) {
-        console.log("No frames found in", this.framesDir);
+        const videoPath = this.findVideoFile();
+        if (!videoPath) {
+          console.log(
+            "No frames or video found. Place a screen recording in scrapers/smartmarket-input/"
+          );
+          return [];
+        }
+
+        console.log(`Found video: ${path.basename(videoPath)}`);
+        await this.extractFrames(videoPath);
+        frameFiles = this.getFrameFiles();
+      }
+
+      if (frameFiles.length === 0) {
+        console.log("Frame extraction produced no frames");
         return [];
       }
 
@@ -61,6 +77,119 @@ class SmartMarketScraper {
     }
   }
 
+  findVideoFile() {
+    if (!fs.existsSync(this.inputDir)) {
+      return null;
+    }
+
+    const videoExtensions = [".mp4", ".mov", ".avi", ".mkv", ".webm"];
+    const files = fs.readdirSync(this.inputDir);
+
+    for (const file of files) {
+      const ext = path.extname(file).toLowerCase();
+      if (videoExtensions.includes(ext)) {
+        return path.join(this.inputDir, file);
+      }
+    }
+    return null;
+  }
+
+  async extractFrames(videoPath) {
+    console.log("Extracting frames from video at 1 fps...");
+
+    fs.mkdirSync(this.framesDir, { recursive: true });
+
+    // Clean existing frames
+    for (const file of fs.readdirSync(this.framesDir)) {
+      if (file.startsWith("frame-")) {
+        fs.unlinkSync(path.join(this.framesDir, file));
+      }
+    }
+
+    const outputPattern = path.join(this.framesDir, "frame-%04d.png");
+    execSync(`ffmpeg -i "${videoPath}" -vf fps=1 "${outputPattern}" -y`, {
+      stdio: "pipe",
+    });
+
+    const rawFrames = this.getFrameFiles();
+    console.log(`Extracted ${rawFrames.length} raw frames`);
+
+    // Deduplicate similar frames using perceptual hashing
+    const uniqueFrames = await this.deduplicateFrames(
+      rawFrames.map((f) => path.join(this.framesDir, f))
+    );
+
+    // Remove duplicate frames from disk
+    const uniqueSet = new Set(uniqueFrames.map((f) => path.basename(f)));
+    for (const file of rawFrames) {
+      if (!uniqueSet.has(file)) {
+        fs.unlinkSync(path.join(this.framesDir, file));
+      }
+    }
+
+    console.log(
+      `Kept ${uniqueFrames.length} unique frames after deduplication`
+    );
+  }
+
+  async calculatePHash(imagePath) {
+    const { data } = await sharp(imagePath)
+      .resize(8, 8, { fit: "fill" })
+      .grayscale()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    let sum = 0;
+    for (const pixel of data) {
+      sum += pixel;
+    }
+    const avg = sum / data.length;
+
+    let hash = BigInt(0);
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] > avg) {
+        hash |= BigInt(1) << BigInt(i);
+      }
+    }
+    return hash;
+  }
+
+  hammingDistance(hash1, hash2) {
+    let xor = hash1 ^ hash2;
+    let distance = 0;
+    while (xor > 0n) {
+      distance += Number(xor & 1n);
+      xor >>= 1n;
+    }
+    return distance;
+  }
+
+  async deduplicateFrames(framePaths) {
+    console.log("Deduplicating frames by perceptual hash...");
+
+    const uniqueFrames = [];
+    const hashes = [];
+
+    for (const framePath of framePaths) {
+      const hash = await this.calculatePHash(framePath);
+
+      let isDuplicate = false;
+      for (const existingHash of hashes) {
+        if (this.hammingDistance(hash, existingHash) < this.similarityThreshold) {
+          isDuplicate = true;
+          break;
+        }
+      }
+
+      if (!isDuplicate) {
+        uniqueFrames.push(framePath);
+        hashes.push(hash);
+      }
+    }
+
+    return uniqueFrames;
+  }
+
   getFrameFiles() {
     if (!fs.existsSync(this.framesDir)) {
       return [];
@@ -68,7 +197,10 @@ class SmartMarketScraper {
 
     return fs
       .readdirSync(this.framesDir)
-      .filter((f) => f.startsWith("frame-") && (f.endsWith(".png") || f.endsWith(".jpg")))
+      .filter(
+        (f) =>
+          f.startsWith("frame-") && (f.endsWith(".png") || f.endsWith(".jpg"))
+      )
       .sort();
   }
 
@@ -87,11 +219,12 @@ class SmartMarketScraper {
           const merchantName = extracted.merchant.trim();
           const lowerName = merchantName.toLowerCase();
 
-          // Filter out UI elements and invalid entries
+          // Filter out UI elements, app branding, and invalid entries
           const invalidNames = [
             "descopera", "recomandate", "cauta", "filtre",
             "toate campaniile", "campaniile mele", "parteneri",
-            "recompense", "profil", "la noriel", "la avon"
+            "recompense", "profil", "la noriel", "la avon",
+            "smart market", "raiffeisen smart market",
           ];
 
           if (
@@ -295,13 +428,32 @@ Example: {"merchant": "Raiffeisen Bank", "cashback": "150 puncte"}`;
     const nameCorrections = {
       "em ag": "eMAG",
       "emag": "eMAG",
+      "e mag": "eMAG",
+      "ra i": "Raiffeisen Bank",
+      "ra or r": "Raiffeisen Bank",
       "ra…i": "Raiffeisen Bank",
       "ra…": "Raiffeisen Bank",
       "raiffeisen": "Raiffeisen Bank",
+      "raiffeisen bank": "Raiffeisen Bank",
       "norile": "Noriel",
+      "noriel": "Noriel",
       "vegus": "vegis.ro",
       "vegig": "vegis.ro",
       "vegisro": "vegis.ro",
+      "vegis.ro": "vegis.ro",
+      "vegis": "vegis.ro",
+      "bebe organic": "Bebe Organic",
+      "bebe": "Bebe Organic",
+      "ibarber.ro": "iBarber.ro",
+      "ibarber": "iBarber.ro",
+      "sanovita": "SanoVita",
+      "inpuff": "INPUFF",
+      "gunnar": "GUNNAR",
+      "avon": "AVON",
+      "bagno": "Bagno",
+      "zandra": "Zandra",
+      "adinish": "Adinish",
+      "rozmarin": "Rozmarin",
     };
 
     for (const offer of offers) {
@@ -352,11 +504,44 @@ Example: {"merchant": "Raiffeisen Bank", "cashback": "150 puncte"}`;
       );
 
       if (representative) {
+        // Normalize cashback formatting
+        representative.offers[0].cashback = this.normalizeCashback(
+          representative.offers[0].cashback
+        );
+        representative.offers[0].description = `${representative.offers[0].cashback} la ${representative.name}`;
         deduplicated.push(representative);
       }
     }
 
     return deduplicated;
+  }
+
+  normalizeCashback(value) {
+    if (!value) return value;
+    let v = value.trim();
+
+    // Already has % sign
+    if (v.endsWith("%")) return v;
+
+    // "12% reduc" or "10% cashback" -> "12%"
+    const pctMatch = v.match(/^(\d+%)/);
+    if (pctMatch) return pctMatch[1];
+
+    // "15 Lei" -> "15 Lei"
+    if (/^\d+\s*lei$/i.test(v)) {
+      const num = v.match(/\d+/)[0];
+      return `${num} Lei`;
+    }
+
+    // Bare number (points) - e.g. "40", "150", "250"
+    if (/^\d+$/.test(v)) {
+      return `${v} puncte`;
+    }
+
+    // "X puncte" - already formatted
+    if (/^\d+\s*puncte$/i.test(v)) return v;
+
+    return v;
   }
 }
 

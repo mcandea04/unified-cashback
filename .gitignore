@@ -2,3 +2,8 @@ node_modules/
 database/cashback.db
 scrapers/smartmarket-input/
 scrapers/smartmarket-frames/
+scrapers/ing-input/
+scrapers/ing-frames/
+scrapers/unicredit-input/
+scrapers/unicredit-frames/
+scrapers/delta-reports/

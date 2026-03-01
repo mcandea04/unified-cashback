@@ -1,3 +1,28 @@
+const BT_CASHBACK = 2;
+
+const SOURCE_INFO = {
+  mastercard: { name: "Mastercard Premium", card: "Mastercard Gold/Platinum/World/World Elite emis in Romania", stacksWithBT: false },
+  cashclub: { name: "CashClub", card: null, stacksWithBT: true },
+  guerrilla: { name: "Avanpost Guerrilla", card: "Card de debit Libra Bank (Avanpost)", stacksWithBT: false },
+  smartmarket: { name: "Smart Market", card: "Card Raiffeisen Bank", stacksWithBT: false },
+  ing: { name: "ING Bazar", card: "Orice card ING (debit sau credit)", stacksWithBT: false },
+  unicredit: { name: "UniCredit ShopSmart", card: "Card UniCredit Bank (debit sau credit)", stacksWithBT: false },
+  visa: { name: "MyVisa", card: "Card Visa Premium (Gold/Platinum/Signature/Infinite)", stacksWithBT: false },
+};
+
+function parseCashbackPercent(cashback) {
+  if (!cashback) return null;
+  const match = cashback.match(/^(\d+(?:\.\d+)?)\s*%/);
+  return match ? parseFloat(match[1]) : null;
+}
+
+function effectiveRate(result) {
+  const info = SOURCE_INFO[result.source];
+  const pct = result.offers && result.offers[0] ? parseCashbackPercent(result.offers[0].cashback) : null;
+  if (pct === null) return null;
+  return info && info.stacksWithBT ? pct + BT_CASHBACK : pct;
+}
+
 const translations = {
   en: {
     appTitle: "Unified Cashback Search",
@@ -8,34 +33,42 @@ const translations = {
     sourcesLoading: "Loading sources...",
     searchingIn: "Searching in: {sources}",
     loading: "Searching for offers...",
-    noResultsTitle: "No offers found for this search. 📭",
+    noResultsTitle: "No offers found for this search.",
     noResultsHint: "Try another store name or check the spelling.",
-    footerSources: "Sources: Mastercard Premium Collection, CashClub, Guerrilla Radio Avanpost",
+    footerSources: "Sources: Mastercard Premium Collection, CashClub, Avanpost Guerrilla, Smart Market, ING Bazar, UniCredit ShopSmart, MyVisa",
     lastUpdatedLabel: "Data last updated:",
     viewDetails: "View details",
-    minCharsAlert: "Please enter at least 2 characters to search.",
     errorLoading: "Failed to load data.",
     errorLoadingShort: "Error loading data.",
     errorHint: "Check your internet connection and try again.",
+    cardRequired: "Requires: {card}",
+    cardAgnostic: "Any card - stacks with your card's cashback",
+    effectiveReal: "Effective: {rate}%",
+    effectiveWithBT: "({pct}% + {bt}% BT Direct)",
+    effectiveWithoutBT: "(without BT {bt}%)",
   },
   ro: {
-    appTitle: "Căutare Cashback Unificată",
-    tagline: "Găsește oferte de cashback și cupoane pentru magazinele tale preferate",
-    languageLabel: "Limbă",
-    searchPlaceholder: "Caută un magazin (ex: eMAG, H&M, Zara)...",
-    searchButton: "Caută",
-    sourcesLoading: "Se încarcă sursele...",
-    searchingIn: "Căutând în: {sources}",
-    loading: "Se caută oferte...",
-    noResultsTitle: "Nu am găsit oferte pentru această căutare. 📭",
-    noResultsHint: "Încearcă cu un alt nume de magazin sau verifică ortografia.",
-    footerSources: "Surse: Mastercard Premium Collection, CashClub, Guerrilla Radio Avanpost",
+    appTitle: "Cautare Cashback Unificata",
+    tagline: "Gaseste oferte de cashback si cupoane pentru magazinele tale preferate",
+    languageLabel: "Limba",
+    searchPlaceholder: "Cauta un magazin (ex: eMAG, H&M, Zara)...",
+    searchButton: "Cauta",
+    sourcesLoading: "Se incarca sursele...",
+    searchingIn: "Cautand in: {sources}",
+    loading: "Se cauta oferte...",
+    noResultsTitle: "Nu am gasit oferte pentru aceasta cautare.",
+    noResultsHint: "Incearca cu un alt nume de magazin sau verifica ortografia.",
+    footerSources: "Surse: Mastercard Premium Collection, CashClub, Avanpost Guerrilla, Smart Market, ING Bazar, UniCredit ShopSmart, MyVisa",
     lastUpdatedLabel: "Ultima actualizare a datelor:",
     viewDetails: "Vezi detalii",
-    minCharsAlert: "Te rog introdu cel puțin 2 caractere pentru căutare.",
-    errorLoading: "Eroare la încărcarea datelor.",
-    errorLoadingShort: "Eroare la încărcarea datelor.",
-    errorHint: "Verifică conexiunea la internet și încearcă din nou.",
+    errorLoading: "Eroare la incarcarea datelor.",
+    errorLoadingShort: "Eroare la incarcarea datelor.",
+    errorHint: "Verifica conexiunea la internet si incearca din nou.",
+    cardRequired: "Necesita: {card}",
+    cardAgnostic: "Orice card - se cumuleaza cu cashback-ul cardului tau",
+    effectiveReal: "Efect real: {rate}%",
+    effectiveWithBT: "({pct}% + {bt}% BT Direct)",
+    effectiveWithoutBT: "(fara BT {bt}%)",
   },
 };
 
@@ -147,6 +180,17 @@ class CashbackSearch {
       }
     });
 
+    // Search as you type with debounce
+    this.debounceTimer = null;
+    this.searchInput.addEventListener("input", () => {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => {
+        if (this.searchInput.value.trim().length >= 2) {
+          this.search();
+        }
+      }, 300);
+    });
+
     this.searchInput.focus();
   }
 
@@ -179,30 +223,19 @@ class CashbackSearch {
   }
 
   updateLastUpdated() {
-    if (!this.lastUpdatedDate) {
-      return;
-    }
-
+    if (!this.lastUpdatedDate) return;
     const locale = this.currentLanguage === "ro" ? "ro-RO" : "en-US";
     this.lastUpdate.textContent = this.lastUpdatedDate.toLocaleDateString(locale);
   }
 
   updateSourcesInfo() {
-    const sourceNames = {
-      mastercard: "Mastercard Premium",
-      cashclub: "CashClub",
-      guerrilla: "Guerrilla Radio",
-      smartmarket: "Smart Market",
-    };
-
     const sourceCounts = {};
     for (const offer of this.offers) {
-      const source = offer.source;
-      sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+      sourceCounts[offer.source] = (sourceCounts[offer.source] || 0) + 1;
     }
 
     const sourcesText = Object.entries(sourceCounts)
-      .map(([source, count]) => `${sourceNames[source] || source} (${count})`)
+      .map(([source, count]) => `${(SOURCE_INFO[source] || {}).name || source} (${count})`)
       .join(", ");
 
     this.sourcesInfo.textContent = this.t("searchingIn", { sources: sourcesText });
@@ -212,17 +245,26 @@ class CashbackSearch {
     const query = this.searchInput.value.trim();
 
     if (query.length < 2) {
-      alert(this.t("minCharsAlert"));
       return;
     }
 
     this.showLoading();
 
     const results = this.fuse.search(query);
-    const formattedResults = results.map((result) => result.item);
+    const items = results.map((r) => r.item);
+
+    // Sort by effective cashback rate (highest first), non-percentage offers last
+    items.sort((a, b) => {
+      const rateA = effectiveRate(a);
+      const rateB = effectiveRate(b);
+      if (rateA !== null && rateB !== null) return rateB - rateA;
+      if (rateA !== null) return -1;
+      if (rateB !== null) return 1;
+      return 0;
+    });
 
     setTimeout(() => {
-      this.displayResults(formattedResults, query);
+      this.displayResults(items, query);
     }, 100);
   }
 
@@ -253,13 +295,26 @@ class CashbackSearch {
 
   createResultCard(result) {
     const sourceClass = `source-${result.source}`;
-    const sourceName =
-      {
-        mastercard: "Mastercard Premium",
-        cashclub: "CashClub",
-        guerrilla: "Guerrilla Radio",
-        smartmarket: "Smart Market",
-      }[result.source] || result.source;
+    const info = SOURCE_INFO[result.source] || { name: result.source, card: null, stacksWithBT: false };
+
+    const cardTag = info.card
+      ? `<span class="card-required">${this.t("cardRequired", { card: info.card })}</span>`
+      : `<span class="card-agnostic">${this.t("cardAgnostic")}</span>`;
+
+    const pct = result.offers && result.offers[0] ? parseCashbackPercent(result.offers[0].cashback) : null;
+    const eff = effectiveRate(result);
+
+    let effectiveHtml = "";
+    if (eff !== null) {
+      const rateText = this.t("effectiveReal", { rate: eff });
+      if (info.stacksWithBT) {
+        const detail = this.t("effectiveWithBT", { pct, bt: BT_CASHBACK });
+        effectiveHtml = `<div class="effective-rate stacks">${rateText} <span class="effective-detail">${detail}</span></div>`;
+      } else {
+        const detail = this.t("effectiveWithoutBT", { bt: BT_CASHBACK });
+        effectiveHtml = `<div class="effective-rate locked">${rateText} <span class="effective-detail">${detail}</span></div>`;
+      }
+    }
 
     const offersHtml = result.offers
       .map(
@@ -276,7 +331,7 @@ class CashbackSearch {
       ? `
             <div class="merchant-url">
                 <a href="${result.url}" target="_blank" rel="noopener">
-                    🔗 ${this.t("viewDetails")}
+                    ${this.t("viewDetails")}
                 </a>
             </div>
         `
@@ -286,8 +341,10 @@ class CashbackSearch {
             <div class="result-card">
                 <div class="merchant-name">
                     ${result.name}
-                    <span class="source-badge ${sourceClass}">${sourceName}</span>
+                    <span class="source-badge ${sourceClass}">${info.name}</span>
                 </div>
+                <div class="card-info">${cardTag}</div>
+                ${effectiveHtml}
 
                 <div class="offers-list">
                     ${offersHtml}
@@ -304,7 +361,7 @@ class CashbackSearch {
     this.noResults.style.display = "block";
 
     this.noResults.innerHTML = `
-            <p>❌ ${message}</p>
+            <p>${message}</p>
             <small>${this.t("errorHint")}</small>
         `;
   }

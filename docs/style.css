@@ -186,6 +186,57 @@ header p {
     color: #333;
 }
 
+.source-ing {
+    background: #FF6200;
+    color: white;
+}
+
+.source-unicredit {
+    background: #E00000;
+    color: white;
+}
+
+.source-visa {
+    background: #1A1F71;
+    color: white;
+}
+
+.card-info {
+    margin-top: 5px;
+    font-size: 0.8rem;
+}
+
+.card-required {
+    color: #e74c3c;
+}
+
+.card-agnostic {
+    color: #27ae60;
+}
+
+.effective-rate {
+    margin-top: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.effective-rate.stacks {
+    background: #d5f5e3;
+    color: #1e8449;
+}
+
+.effective-rate.locked {
+    background: #fdebd0;
+    color: #b9770e;
+}
+
+.effective-detail {
+    font-weight: 400;
+    font-size: 0.8rem;
+}
+
 .offers-list {
     margin-top: 15px;
 }

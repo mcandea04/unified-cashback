@@ -4,6 +4,7 @@ const MastercardScraper = require("./mastercard-scraper");
 const CashclubScraper = require("./cashclub-scraper");
 const GuerrillaScraper = require("./guerrilla-scraper");
 const SmartMarketScraper = require("./smartmarket-scraper");
+const VisaScraper = require("./visa-scraper");
 const { generateDeltaReport } = require("./utils/delta-reporter");
 
 const OUTPUT_PATH = path.join(__dirname, "..", "docs", "data", "offers.json");
@@ -23,7 +24,7 @@ async function runScrapers() {
     },
     { name: "CashClub", scraper: new CashclubScraper(), key: "cashclub" },
     {
-      name: "Guerrilla Radio Avanpost",
+      name: "Avanpost Guerrilla",
       scraper: new GuerrillaScraper(),
       key: "guerrilla",
     },
@@ -31,6 +32,11 @@ async function runScrapers() {
       name: "Smart Market Raiffeisen",
       scraper: new SmartMarketScraper(),
       key: "smartmarket",
+    },
+    {
+      name: "MyVisa",
+      scraper: new VisaScraper(),
+      key: "visa",
     },
   ];
 

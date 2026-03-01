@@ -1,99 +1,88 @@
-const { chromium } = require("playwright");
+const https = require("https");
 
 class MastercardScraper {
   constructor() {
     this.source = "mastercard";
-    this.url = "https://www.priceless.com/filter/options";
+    this.baseUrl = "https://www.priceless.com";
+    this.apiUrl =
+      "https://www.priceless.com/filter/getFilterProducts?offset=%OFFSET%&limit=50";
   }
 
-  extractMerchantNameFromUrl(url) {
-    try {
-      const urlParts = url.split("/");
-      if (urlParts.length > 2) {
-        const slug = urlParts[urlParts.length - 3];
-        if (slug) {
-          // Convert slug to title case
-          return slug
-            .split("-")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ")
-            .replace(/ At /g, " at "); // Fix casing for "at"
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-    return null;
+  fetchPage(offset) {
+    const url = this.apiUrl.replace("%OFFSET%", offset);
+    return new Promise((resolve, reject) => {
+      https
+        .get(url, { headers: { Cookie: "site=ro_RO" } }, (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              reject(new Error(`Failed to parse page at offset ${offset}`));
+            }
+          });
+        })
+        .on("error", reject);
+    });
   }
 
   async scrape() {
     console.log("Starting Mastercard Premium Collection scraper...");
 
-    const browser = await chromium.launch({
-      headless: true,
-    });
-    const page = await browser.newPage();
-
     try {
-      await page.goto(this.url, { waitUntil: "networkidle" });
+      const firstPage = await this.fetchPage(0);
+      const total = firstPage.pagination.total || 0;
+      console.log(`API reports ${total} total products`);
 
-      let offers = [];
-      let previousHeight = 0;
-      let currentHeight = await page.evaluate(() => document.body.scrollHeight);
+      const allProducts = [...firstPage.results];
+      let offset = 50;
 
-      // Keep scrolling until we can't scroll any further
-      while (previousHeight !== currentHeight) {
-        previousHeight = currentHeight;
-        await page.evaluate(() => {
-          window.scrollTo(0, document.body.scrollHeight);
-        });
-        await page.waitForTimeout(2000); // Wait for new content to load
-        currentHeight = await page.evaluate(() => document.body.scrollHeight);
+      while (offset < total) {
+        try {
+          const page = await this.fetchPage(offset);
+          if (!page.results || page.results.length === 0) break;
+          allProducts.push(...page.results);
+          console.log(
+            `  Fetched offset ${offset}: ${page.results.length} products`
+          );
+        } catch (e) {
+          console.log(`  Skipping offset ${offset}: ${e.message}`);
+        }
+        offset += 50;
       }
 
-      // Now that we have scrolled to the bottom, get all the offers
-      offers = await page.evaluate(() => {
-        if (window.g_category_products_and_collections) {
-          return window.g_category_products_and_collections;
-        }
-        return [];
-      });
+      console.log(`Found ${allProducts.length} products from Mastercard`);
 
-      console.log(`Found ${offers.length} offers from Mastercard`);
-
-      // Transform to unified format
       const results = [];
-      for (const offer of offers) {
-        try {
-          const merchantName =
-            this.extractMerchantNameFromUrl(offer.productUrl) ||
-            offer.pDisplayName;
+      for (const product of allProducts) {
+        const name = product.productName;
+        if (!name) continue;
 
-          results.push({
-            name: merchantName,
-            source: this.source,
-            url: `https://www.priceless.com${offer.productUrl}`,
-            offers: [
-              {
-                description: offer.pDisplayName,
-                cashback: offer.displayPrice,
-              },
-            ],
-          });
-        } catch (error) {
-          console.error(`Error processing offer ${offer.pDisplayName}:`, error);
-        }
+        const href = product.attributes?.href || "";
+        const priceText = product.priceText || "";
+        const location = product.productLocationText || "";
+
+        results.push({
+          name,
+          source: this.source,
+          url: href ? `${this.baseUrl}${href}` : this.baseUrl,
+          offers: [
+            {
+              description: [name, location].filter(Boolean).join(" - "),
+              cashback: priceText || "Oferta",
+            },
+          ],
+        });
       }
 
       console.log(
-        `Processed ${results.length} offers from Mastercard Premium Collection`,
+        `Processed ${results.length} offers from Mastercard Premium Collection`
       );
       return results;
     } catch (error) {
       console.error("Error scraping Mastercard:", error);
       throw error;
-    } finally {
-      await browser.close();
     }
   }
 }

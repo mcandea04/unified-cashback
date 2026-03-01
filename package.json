@@ -8,9 +8,14 @@
     "scrape:cashclub": "node scrapers/run-scrapers.js cashclub",
     "scrape:guerrilla": "node scrapers/run-scrapers.js guerrilla",
     "scrape:smartmarket": "node scrapers/run-scrapers.js smartmarket",
+    "scrape:visa": "node scrapers/run-scrapers.js visa",
+    "extract:smartmarket": "node scrapers/extract-frames.js smartmarket",
+    "extract:ing": "node scrapers/extract-frames.js ing",
+    "extract:unicredit": "node scrapers/extract-frames.js unicredit",
     "serve": "npx serve docs -l 8888"
   },
   "dependencies": {
-    "playwright": "^1.55.0"
+    "playwright": "^1.55.0",
+    "sharp": "^0.33.0"
   }
 }
