@@ -251,17 +251,19 @@ class CashbackSearch {
     this.showLoading();
 
     const results = this.fuse.search(query);
-    const items = results.map((r) => r.item);
 
-    // Sort by effective cashback rate (highest first), non-percentage offers last
-    items.sort((a, b) => {
-      const rateA = effectiveRate(a);
-      const rateB = effectiveRate(b);
+    // Sort by relevance first, then by cashback rate as tiebreaker
+    results.sort((a, b) => {
+      const scoreDiff = a.score - b.score;
+      if (Math.abs(scoreDiff) > 0.01) return scoreDiff;
+      const rateA = effectiveRate(a.item);
+      const rateB = effectiveRate(b.item);
       if (rateA !== null && rateB !== null) return rateB - rateA;
       if (rateA !== null) return -1;
       if (rateB !== null) return 1;
       return 0;
     });
+    const items = results.map((r) => r.item);
 
     setTimeout(() => {
       this.displayResults(items, query);
