@@ -367,6 +367,36 @@ class CashbackSearch {
   }
 }
 
+function initTheme() {
+  const stored = localStorage.getItem("theme");
+  if (stored) {
+    document.documentElement.setAttribute("data-theme", stored);
+  } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+    if (!localStorage.getItem("theme")) {
+      document.documentElement.setAttribute("data-theme", e.matches ? "dark" : "light");
+    }
+  });
+}
+
+function bindThemeToggle() {
+  const toggle = document.getElementById("themeToggle");
+  if (!toggle) return;
+
+  toggle.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+  });
+}
+
+initTheme();
+
 document.addEventListener("DOMContentLoaded", () => {
+  bindThemeToggle();
   new CashbackSearch();
 });
